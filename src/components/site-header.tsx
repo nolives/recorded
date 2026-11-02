@@ -11,10 +11,13 @@ export function SiteHeader({ user }: { user: CurrentUser | null }) {
         </Link>
 
         {user ? (
-          <div className="flex items-center gap-4 text-sm">
-            <nav className="flex items-center gap-4">
+          <div className="flex items-center gap-3 text-sm sm:gap-4">
+            <nav className="flex items-center gap-3 sm:gap-4">
               <Link href="/diary" className="hover:text-accent">
                 Diary
+              </Link>
+              <Link href="/favorites" className="hover:text-accent">
+                Favorites
               </Link>
               <Link href="/listens/new" className="hover:text-accent">
                 Log
