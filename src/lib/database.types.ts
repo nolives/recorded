@@ -48,6 +48,7 @@ export type Database = {
           genre: string | null
           id: number
           itunes_id: number | null
+          musicbrainz_id: string | null
           release_year: number | null
           title: string
         }
@@ -59,6 +60,7 @@ export type Database = {
           genre?: string | null
           id?: never
           itunes_id?: number | null
+          musicbrainz_id?: string | null
           release_year?: number | null
           title: string
         }
@@ -70,6 +72,7 @@ export type Database = {
           genre?: string | null
           id?: never
           itunes_id?: number | null
+          musicbrainz_id?: string | null
           release_year?: number | null
           title?: string
         }
