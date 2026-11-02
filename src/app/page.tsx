@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 
 export default async function HomePage() {
@@ -32,14 +33,6 @@ export default async function HomePage() {
     );
   }
 
-  return (
-    <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-10">
-      <h1 className="text-2xl font-semibold">
-        Welcome{user.username ? `, @${user.username}` : ""}
-      </h1>
-      <p className="mt-2 text-muted">
-        You&apos;re logged in. Logging listens comes next.
-      </p>
-    </main>
-  );
+  // Logged-in visitors go straight to their diary.
+  redirect("/diary");
 }
