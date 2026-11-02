@@ -6,6 +6,9 @@ import type {
   ListenFormState,
   ListenFormValues,
 } from "@/app/(app)/listens/actions";
+import { AlbumCover } from "@/components/album-cover";
+import { AlbumSearch } from "@/components/album-search";
+import { itunesThumbnail, type ItunesAlbum } from "@/lib/itunes";
 import { REVIEW_MAX, type ListenField } from "@/lib/validation";
 
 type ListenFormProps = {
@@ -38,6 +41,19 @@ function localToday() {
   return `${now.getFullYear()}-${month}-${day}`;
 }
 
+// The album picked from iTunes, if any.
+type Picked = { itunesId: string; coverUrl: string; title: string; artist: string };
+
+function pickedFrom(values: Partial<ListenFormValues> | undefined): Picked | null {
+  if (!values?.itunesId) return null;
+  return {
+    itunesId: values.itunesId,
+    coverUrl: values.coverUrl ?? "",
+    title: values.title ?? "",
+    artist: values.artist ?? "",
+  };
+}
+
 export function ListenForm({
   action,
   initialValues = {},
@@ -51,14 +67,41 @@ export function ListenForm({
   const formRef = useRef<HTMLFormElement>(null);
   const dateRef = useRef<HTMLInputElement>(null);
   const [reviewLength, setReviewLength] = useState(values.review?.length ?? 0);
+  const [picked, setPicked] = useState(() => pickedFrom(values));
 
   // After each save attempt the form resets to the submitted values,
-  // so reset the review counter to match.
+  // so reset the review counter and picked album to match.
   const [lastState, setLastState] = useState(state);
   if (state !== lastState) {
     setLastState(state);
     setReviewLength(state.values?.review?.length ?? 0);
+    setPicked(pickedFrom(state.values));
   }
+
+  // Fill in the album fields from an iTunes result.
+  function fillFromItunes(album: ItunesAlbum) {
+    const form = formRef.current;
+    const fill = (name: string, value: string) => {
+      const input = form?.elements.namedItem(name);
+      if (input instanceof HTMLInputElement) input.value = value;
+    };
+    fill("title", album.title);
+    fill("artist", album.artist);
+    fill("releaseYear", album.year);
+    fill("genre", album.genre);
+    setPicked({
+      itunesId: String(album.itunesId),
+      coverUrl: album.coverUrl,
+      title: album.title,
+      artist: album.artist,
+    });
+    // The album is done; the score is usually the next thing to pick.
+    form?.querySelector<HTMLElement>("#score")?.focus();
+  }
+
+  // Typing a different title or artist means it's no longer that iTunes
+  // album, so drop the link and cover.
+  const unlinkItunes = () => setPicked(null);
 
   // New listens default to today (in your own time zone).
   useEffect(() => {
@@ -89,15 +132,52 @@ export function ListenForm({
         </p>
       ) : null}
 
-      <fieldset className="flex flex-col gap-4">
+      <fieldset className="flex min-w-0 flex-col gap-4">
         <legend className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted">
           Album
         </legend>
+        <AlbumSearch inputClass={inputClass} onPick={fillFromItunes} />
+
+        <input type="hidden" name="itunesId" value={picked?.itunesId ?? ""} />
+        <input type="hidden" name="coverUrl" value={picked?.coverUrl ?? ""} />
+        {picked ? (
+          <div className="flex items-center gap-3 rounded-md border border-line bg-surface p-2">
+            <AlbumCover title={picked.title} artist={picked.artist} coverUrl={itunesThumbnail(picked.coverUrl)} />
+            <p className="min-w-0 flex-1 text-sm">
+              <span className="block font-medium">Filled in from iTunes</span>
+              <span className="block text-muted">The cover will be saved with the album.</span>
+            </p>
+            <button
+              type="button"
+              onClick={unlinkItunes}
+              className="shrink-0 rounded-md px-2 py-1 text-sm text-muted underline-offset-2 hover:text-foreground hover:underline"
+            >
+              Remove cover
+            </button>
+          </div>
+        ) : null}
+
         <Field label="Album title" field="title" error={errors.title}>
-          <input id="title" name="title" required defaultValue={values.title} className={inputClass} {...a11y("title")} />
+          <input
+            id="title"
+            name="title"
+            required
+            defaultValue={values.title}
+            onChange={picked ? unlinkItunes : undefined}
+            className={inputClass}
+            {...a11y("title")}
+          />
         </Field>
         <Field label="Artist" field="artist" error={errors.artist}>
-          <input id="artist" name="artist" required defaultValue={values.artist} className={inputClass} {...a11y("artist")} />
+          <input
+            id="artist"
+            name="artist"
+            required
+            defaultValue={values.artist}
+            onChange={picked ? unlinkItunes : undefined}
+            className={inputClass}
+            {...a11y("artist")}
+          />
         </Field>
         <div className="grid grid-cols-2 gap-4">
           <Field label="Release year" field="releaseYear" error={errors.releaseYear} optional>
@@ -116,7 +196,7 @@ export function ListenForm({
         </div>
       </fieldset>
 
-      <fieldset className="flex flex-col gap-4">
+      <fieldset className="flex min-w-0 flex-col gap-4">
         <legend className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted">
           Your listen
         </legend>
@@ -134,7 +214,17 @@ export function ListenForm({
             />
           </Field>
           <Field label="Score" field="score" error={errors.score} optional>
-            <select id="score" name="score" defaultValue={values.score ?? ""} className={inputClass} {...a11y("score")}>
+            {/* React only reads a dropdown's defaultValue when it first
+                appears, so the key makes a fresh one after each save attempt
+                and the picked score survives a failed save. */}
+            <select
+              key={`score-${values.score ?? ""}`}
+              id="score"
+              name="score"
+              defaultValue={values.score ?? ""}
+              className={inputClass}
+              {...a11y("score")}
+            >
               <option value="">No score</option>
               {Array.from({ length: 10 }, (_, i) => 10 - i).map((n) => (
                 <option key={n} value={n}>

@@ -26,6 +26,8 @@ export default async function EditListenPage({ params }: { params: Promise<{ id:
           listenedOn: listen.listened_on,
           score: listen.score?.toString() ?? "",
           review: listen.review ?? "",
+          itunesId: album.itunes_id?.toString() ?? "",
+          coverUrl: album.cover_url ?? "",
         }}
         submitLabel="Save changes"
         pendingLabel="Saving…"

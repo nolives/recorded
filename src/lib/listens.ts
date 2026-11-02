@@ -10,7 +10,7 @@ export async function getListen(rawId: string) {
   const { data } = await supabase
     .from("listens")
     .select(
-      "id, listened_on, score, review, albums (id, title, artist, release_year, genre, cover_url)",
+      "id, listened_on, score, review, albums (id, title, artist, release_year, genre, cover_url, itunes_id)",
     )
     .eq("id", Number(rawId))
     .maybeSingle();
