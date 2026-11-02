@@ -12,8 +12,16 @@ export function SiteHeader({ user }: { user: CurrentUser | null }) {
 
         {user ? (
           <div className="flex items-center gap-4 text-sm">
+            <nav className="flex items-center gap-4">
+              <Link href="/diary" className="hover:text-accent">
+                Diary
+              </Link>
+              <Link href="/listens/new" className="hover:text-accent">
+                Log
+              </Link>
+            </nav>
             {user.username ? (
-              <span className="text-muted">@{user.username}</span>
+              <span className="hidden text-muted sm:inline">@{user.username}</span>
             ) : null}
             <form action={logOut}>
               <button
