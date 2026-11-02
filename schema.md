@@ -35,7 +35,8 @@ erDiagram
         integer release_year "optional, 1900-2100"
         text genre "optional"
         text cover_url "optional"
-        bigint itunes_id "optional, unique"
+        bigint itunes_id "optional, unique (older albums)"
+        uuid musicbrainz_id "optional, unique"
         uuid added_by FK "profiles.id"
         timestamptz created_at
     }
@@ -78,8 +79,9 @@ A database trigger creates the profile automatically when someone signs up, usin
 | `artist` | text | Required, can't be blank |
 | `release_year` | number | Optional, between 1900 and 2100 |
 | `genre` | text | Optional |
-| `cover_url` | text | Optional. Cover image link from iTunes |
-| `itunes_id` | number | Optional, **unique**, so the same iTunes album can't be saved twice |
+| `cover_url` | text | Optional. Cover image link (Internet Archive, via the Cover Art Archive; iTunes for older albums) |
+| `musicbrainz_id` | uuid | Optional, **unique**, so the same MusicBrainz album can't be saved twice. Set when the album is picked from search |
+| `itunes_id` | number | Optional, **unique**. Only on albums saved before search moved from iTunes to MusicBrainz |
 | `added_by` | uuid | Links to `profiles.id`. Filled in automatically with whoever added it |
 | `created_at` | date/time | Set automatically |
 
@@ -132,7 +134,7 @@ Logged-out visitors can't read any table. The only exception is a small `usernam
 | Planned | Built | Same? |
 |---|---|---|
 | `profiles` users table with `id`, `username`, `display_name`, `is_public`, `created_at` | Same columns. Built in **feature 1** instead of feature 2, because sign-up needed it | Yes, built earlier |
-| `albums` with title, artist, release year, genre, cover URL, iTunes id, added by | Same columns | Yes |
+| `albums` with title, artist, release year, genre, cover URL, iTunes id, added by | Same columns, plus `musicbrainz_id` | **Changed** (my decision after real use): iTunes search couldn't find some albums I logged, like *Perfecth* and *Reality Awaits*, so search moved to MusicBrainz. `itunes_id` stays for albums saved before the switch |
 | Only the user who added an album can edit its details | Enforced by a privacy rule | Yes |
 | `listens` with date, **required** score 1–10, optional review | Same columns, but the **score is optional** | **Changed** (my decision during feature 2): I want to log an album I listened to without scoring it yet |
 | — | `review` limited to 2,000 characters | **Added**: a safety limit not in the plan |

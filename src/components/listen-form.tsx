@@ -8,7 +8,7 @@ import type {
 } from "@/app/(app)/listens/actions";
 import { AlbumCover } from "@/components/album-cover";
 import { AlbumSearch } from "@/components/album-search";
-import { itunesThumbnail, type ItunesAlbum } from "@/lib/itunes";
+import { coverThumbnail, type FoundAlbum } from "@/lib/musicbrainz";
 import { REVIEW_MAX, type ListenField } from "@/lib/validation";
 
 type ListenFormProps = {
@@ -41,13 +41,13 @@ function localToday() {
   return `${now.getFullYear()}-${month}-${day}`;
 }
 
-// The album picked from iTunes, if any.
-type Picked = { itunesId: string; coverUrl: string; title: string; artist: string };
+// The album picked from the search, if any.
+type Picked = { musicbrainzId: string; coverUrl: string; title: string; artist: string };
 
 function pickedFrom(values: Partial<ListenFormValues> | undefined): Picked | null {
-  if (!values?.itunesId) return null;
+  if (!values?.musicbrainzId) return null;
   return {
-    itunesId: values.itunesId,
+    musicbrainzId: values.musicbrainzId,
     coverUrl: values.coverUrl ?? "",
     title: values.title ?? "",
     artist: values.artist ?? "",
@@ -78,19 +78,20 @@ export function ListenForm({
     setPicked(pickedFrom(state.values));
   }
 
-  // Fill in the album fields from an iTunes result.
-  function fillFromItunes(album: ItunesAlbum) {
+  function fill(name: string, value: string) {
+    const input = formRef.current?.elements.namedItem(name);
+    if (input instanceof HTMLInputElement) input.value = value;
+  }
+
+  // Fill in the album fields from a search result.
+  function fillFromSearch(album: FoundAlbum) {
     const form = formRef.current;
-    const fill = (name: string, value: string) => {
-      const input = form?.elements.namedItem(name);
-      if (input instanceof HTMLInputElement) input.value = value;
-    };
     fill("title", album.title);
     fill("artist", album.artist);
     fill("releaseYear", album.year);
     fill("genre", album.genre);
     setPicked({
-      itunesId: String(album.itunesId),
+      musicbrainzId: album.mbid,
       coverUrl: album.coverUrl,
       title: album.title,
       artist: album.artist,
@@ -99,9 +100,19 @@ export function ListenForm({
     form?.querySelector<HTMLElement>("#score")?.focus();
   }
 
-  // Typing a different title or artist means it's no longer that iTunes
-  // album, so drop the link and cover.
-  const unlinkItunes = () => setPicked(null);
+  // The genre arrives a moment after picking. Fill it in only if that album
+  // is still the one picked and the genre box is still empty.
+  function fillGenre(mbid: string, genre: string) {
+    const form = formRef.current;
+    const linked = form?.elements.namedItem("musicbrainzId");
+    const genreInput = form?.elements.namedItem("genre");
+    if (!(linked instanceof HTMLInputElement) || linked.value !== mbid) return;
+    if (genreInput instanceof HTMLInputElement && !genreInput.value) genreInput.value = genre;
+  }
+
+  // Typing a different title or artist means it's no longer that album, so
+  // drop the link and cover.
+  const unlink = () => setPicked(null);
 
   // New listens default to today (in your own time zone).
   useEffect(() => {
@@ -136,23 +147,23 @@ export function ListenForm({
         <legend className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted">
           Album
         </legend>
-        <AlbumSearch inputClass={inputClass} onPick={fillFromItunes} />
+        <AlbumSearch inputClass={inputClass} onPick={fillFromSearch} onGenre={fillGenre} />
 
-        <input type="hidden" name="itunesId" value={picked?.itunesId ?? ""} />
+        <input type="hidden" name="musicbrainzId" value={picked?.musicbrainzId ?? ""} />
         <input type="hidden" name="coverUrl" value={picked?.coverUrl ?? ""} />
         {picked ? (
           <div className="flex items-center gap-3 rounded-md border border-line bg-surface p-2">
-            <AlbumCover title={picked.title} artist={picked.artist} coverUrl={itunesThumbnail(picked.coverUrl)} />
+            <AlbumCover title={picked.title} artist={picked.artist} coverUrl={coverThumbnail(picked.coverUrl)} />
             <p className="min-w-0 flex-1 text-sm">
-              <span className="block font-medium">Filled in from iTunes</span>
-              <span className="block text-muted">The cover will be saved with the album.</span>
+              <span className="block font-medium">Filled in from MusicBrainz</span>
+              <span className="block text-muted">The cover will be saved with the album, if it has one.</span>
             </p>
             <button
               type="button"
-              onClick={unlinkItunes}
+              onClick={unlink}
               className="shrink-0 rounded-md px-2 py-1 text-sm text-muted underline-offset-2 hover:text-foreground hover:underline"
             >
-              Remove cover
+              Remove link
             </button>
           </div>
         ) : null}
@@ -163,7 +174,7 @@ export function ListenForm({
             name="title"
             required
             defaultValue={values.title}
-            onChange={picked ? unlinkItunes : undefined}
+            onChange={picked ? unlink : undefined}
             className={inputClass}
             {...a11y("title")}
           />
@@ -174,7 +185,7 @@ export function ListenForm({
             name="artist"
             required
             defaultValue={values.artist}
-            onChange={picked ? unlinkItunes : undefined}
+            onChange={picked ? unlink : undefined}
             className={inputClass}
             {...a11y("artist")}
           />

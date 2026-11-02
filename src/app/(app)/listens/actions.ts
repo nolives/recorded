@@ -2,13 +2,13 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { lookupItunesAlbum, type ItunesAlbum } from "@/lib/itunes";
+import { isMbid, lookupAlbum, type FoundAlbum } from "@/lib/musicbrainz";
 import { validateListen, type ListenErrors, type ListenInput } from "@/lib/validation";
 
-// itunesId and coverUrl are set by the iTunes search box. coverUrl is only
-// used to show the cover again after a failed save; the saved cover always
-// comes from Apple.
-export type ListenFormValues = ListenInput & { itunesId: string; coverUrl: string };
+// musicbrainzId and coverUrl are set by the album search box. coverUrl is
+// only used to show the cover again after a failed save; the saved cover
+// always comes from the server's own lookup.
+export type ListenFormValues = ListenInput & { musicbrainzId: string; coverUrl: string };
 
 export type ListenFormState = {
   message?: string;
@@ -44,7 +44,7 @@ function readForm(formData: FormData): ListenFormValues {
     listenedOn: clean(formData.get("listenedOn")),
     score: clean(formData.get("score")),
     review: String(formData.get("review") ?? "").trim(),
-    itunesId: clean(formData.get("itunesId")),
+    musicbrainzId: clean(formData.get("musicbrainzId")).toLowerCase(),
     coverUrl: clean(formData.get("coverUrl")),
   };
 }
@@ -59,42 +59,42 @@ function exact(value: string) {
 }
 
 // Albums are shared, so reuse one when we can:
-// 1. the album already in our list with the same iTunes id
-// 2. otherwise ask Apple about that id, so a cover or id changed by hand in
-//    the page can't end up in the shared list
+// 1. the album already in our list with the same MusicBrainz id
+// 2. otherwise ask MusicBrainz about that id, so a title or id changed by
+//    hand in the page can't end up in the shared list
 // 3. then reuse the album with the same title and artist (ignoring capitals),
-//    or add a new one, with its iTunes cover if there is one
-// Returns "itunes-unavailable" if Apple needed asking but didn't answer.
+//    or add a new one, with its cover if there is one
+// Returns "lookup-unavailable" if MusicBrainz needed asking but didn't answer.
 async function resolveAlbum(
   supabase: Supabase,
   values: ListenFormValues,
-): Promise<number | "itunes-unavailable"> {
-  if (!/^\d{1,12}$/.test(values.itunesId)) {
+): Promise<number | "lookup-unavailable"> {
+  if (!isMbid(values.musicbrainzId)) {
     return findOrCreateAlbum(supabase, values, null);
   }
 
-  const { data: sameItunes, error } = await supabase
+  const { data: sameAlbum, error } = await supabase
     .from("albums")
     .select("id")
-    .eq("itunes_id", Number(values.itunesId))
+    .eq("musicbrainz_id", values.musicbrainzId)
     .maybeSingle();
   if (error) throw error;
-  if (sameItunes) return sameItunes.id;
+  if (sameAlbum) return sameAlbum.id;
 
-  const itunes = await lookupItunesAlbum(values.itunesId);
-  if (itunes === "unavailable") return "itunes-unavailable";
-  return findOrCreateAlbum(supabase, values, itunes);
+  const found = await lookupAlbum(values.musicbrainzId);
+  if (found === "unavailable") return "lookup-unavailable";
+  return findOrCreateAlbum(supabase, values, found);
 }
 
 async function findOrCreateAlbum(
   supabase: Supabase,
   values: ListenFormValues,
-  itunes: ItunesAlbum | null,
+  found: FoundAlbum | null,
 ) {
-  // For an iTunes album, use Apple's spelling of the title and artist, so a
-  // made-up title can't be saved next to a real album's cover.
-  const title = itunes?.title ?? values.title;
-  const artist = itunes?.artist ?? values.artist;
+  // For a looked-up album, use MusicBrainz's spelling of the title and
+  // artist, so a made-up title can't be saved next to a real album's cover.
+  const title = found?.title ?? values.title;
+  const artist = found?.artist ?? values.artist;
 
   const { data: existing, error: findError } = await supabase
     .from("albums")
@@ -106,15 +106,24 @@ async function findOrCreateAlbum(
     .maybeSingle();
   if (findError) throw findError;
   if (existing) {
-    // An album typed in by hand earlier gets the iTunes cover now. The
-    // privacy rules only let the person who added it change it; for anyone
-    // else this changes nothing.
-    if (itunes) {
+    // An album typed in by hand (or saved from iTunes) earlier gets linked
+    // now, takes MusicBrainz's capitals ("big red car" → "Big Red Car"; the
+    // match above ignores capitals, so only they can differ), and gets a
+    // cover if it had none. The privacy rules only let the person who added
+    // it change it; for anyone else this changes nothing.
+    if (found) {
       await supabase
         .from("albums")
-        .update({ itunes_id: itunes.itunesId, cover_url: itunes.coverUrl || null })
+        .update({ musicbrainz_id: found.mbid, title, artist })
         .eq("id", existing.id)
-        .is("itunes_id", null);
+        .is("musicbrainz_id", null);
+      if (found.coverUrl) {
+        await supabase
+          .from("albums")
+          .update({ cover_url: found.coverUrl })
+          .eq("id", existing.id)
+          .is("cover_url", null);
+      }
     }
     return existing.id;
   }
@@ -126,8 +135,8 @@ async function findOrCreateAlbum(
       artist,
       release_year: toNumberOrNull(values.releaseYear),
       genre: values.genre || null,
-      itunes_id: itunes?.itunesId ?? null,
-      cover_url: itunes?.coverUrl || null,
+      musicbrainz_id: found?.mbid ?? null,
+      cover_url: found?.coverUrl || null,
     })
     .select("id")
     .single();
@@ -136,8 +145,8 @@ async function findOrCreateAlbum(
 }
 
 const SAVE_ERROR = "Something went wrong saving this listen. Please try again.";
-const ITUNES_DOWN =
-  "Couldn't check this album with iTunes just now. Try again in a minute, or click Remove cover to save it without the cover.";
+const LOOKUP_DOWN =
+  "Couldn't check this album with MusicBrainz just now. Try again in a minute, or click Remove link to save it as typed.";
 
 export async function createListen(
   _prev: ListenFormState,
@@ -152,7 +161,7 @@ export async function createListen(
   let listenId: number;
   try {
     const albumId = await resolveAlbum(supabase, values);
-    if (albumId === "itunes-unavailable") return { message: ITUNES_DOWN, values };
+    if (albumId === "lookup-unavailable") return { message: LOOKUP_DOWN, values };
     const { data, error } = await supabase
       .from("listens")
       .insert({
@@ -185,7 +194,7 @@ export async function updateListen(
 
   try {
     const albumId = await resolveAlbum(supabase, values);
-    if (albumId === "itunes-unavailable") return { message: ITUNES_DOWN, values };
+    if (albumId === "lookup-unavailable") return { message: LOOKUP_DOWN, values };
 
     // Year and genre belong to the shared album. The privacy rules only let
     // the person who added the album change them; for anyone else this
