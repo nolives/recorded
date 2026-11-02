@@ -95,7 +95,50 @@ A read-only database check showed no duplicates. My 3 real albums were untouched
 - **A test script that went over the limit itself.** A debugging script fired requests too close together, so its results meant nothing. It redid the check one request at a time.
 - **A backfill test that tested nothing.** The top search result for "hot potatoes wiggles" was a different album (*LIVE Hot Potatoes!*), so the app correctly made a new album. It redid the test after checking the top result's title first.
 
-## 5. Test data to clean up before submission
+## 5. Making covers faster with Vercel's image cache
+
+> "Is there a way to get the album art faster, or is that the best option?"
+
+**Agent:** Timed it:
+- Cover Art Archive link: about 1.3 s
+- the Internet Archive's final server: about 0.8 s
+- Apple's servers, for comparison: about 0.17 s
+
+So skipping redirects can't fix it; covers need copies somewhere fast. It suggested Next.js's built-in image feature, which keeps a resized copy on Vercel's network (copying covers into Supabase storage would be more work).
+
+> "would vercel cacheing them eventually run into storage issues?"
+
+**Agent:** Checked Vercel's current docs. The free plan has no storage limit; it limits work per month:
+- 5,000 new resized images (this app would use a few hundred)
+- 100,000 cache-write units
+- 300,000 cache-read units
+
+Going over is never charged. New images just stop going through the cache, and the app falls back to the cover's own link.
+
+> "Yes, add it"
+
+**What changed:**
+- `next.config.ts` allows only the cover sites (listed once in `src/lib/cover-hosts.ts`) and keeps copies for 31 days.
+- `AlbumCover` tries, in order: Vercel's cached copy, then the cover's own link, then initials.
+- Search results and the picked-album preview skip the cache, since they're only on screen for a moment and would use up the monthly limit.
+
+**Tested (localhost):**
+
+| Check | Result |
+|---|---|
+| Diary covers | Load through the cache, resized to 64px wide (about 1 KB each instead of 500px images) |
+| Repeat view | About 12–15 ms per cover. The cached copy on the server took 2 ms vs 0.3–0.7 s the first time |
+| Temporary test page: good cover / broken cover on an allowed site / good image from an unlisted site / broken unlisted image | Cached copy / cache, then own link, then initials / own link / initials |
+| The Internet Archive server for *big red car* returned errors for a while | The cache failed after 5.4 s, the cover showed via its own link, and the image worked again directly a minute later |
+
+**Problems found:**
+1. **A whole page crashed during development.** Next.js crashes the page when a cover's site isn't on the allowed list, instead of failing just that image. It showed up when the agent briefly removed a site from the list to test the fallback.
+   - **Fix:** one shared list of cover sites. Covers from anywhere else skip the cache and use their own link.
+2. **Covers switched to their own links even though the cache answered.**
+   - The agent's first guess was its own "did the image fail before the page was ready?" check. Next.js's image already does that check itself, so the agent removed its own from cached covers. The covers still switched on the next two loads.
+   - Rather than guess again, it measured a clean load: every cover came through the cache in about 15 ms except one whose Internet Archive server was failing. So the earlier failures were most likely the Internet Archive being flaky, not the app.
+
+## 6. Test data to clean up before submission
 
 Test account 2's listens 30–39, and the children's albums it added:
 - *Baby Beluga*, *Yummy Yummy*, *Hot Potatoes*, *LIVE Hot Potatoes!*, *big red car*, *Rise and Shine*

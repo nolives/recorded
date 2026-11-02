@@ -198,7 +198,7 @@ export function AlbumSearch({
                 onClick={() => pick(album)}
                 className="flex w-full items-center gap-3 p-2 text-left transition-colors hover:bg-surface focus-visible:bg-surface focus-visible:outline-none"
               >
-                <AlbumCover title={album.title} artist={album.artist} coverUrl={coverThumbnail(album.coverUrl)} />
+                <AlbumCover title={album.title} artist={album.artist} coverUrl={coverThumbnail(album.coverUrl)} cached={false} />
                 <span className="min-w-0">
                   <span className="block truncate font-medium">{album.title}</span>
                   <span className="block truncate text-sm text-muted">

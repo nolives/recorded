@@ -153,7 +153,7 @@ export function ListenForm({
         <input type="hidden" name="coverUrl" value={picked?.coverUrl ?? ""} />
         {picked ? (
           <div className="flex items-center gap-3 rounded-md border border-line bg-surface p-2">
-            <AlbumCover title={picked.title} artist={picked.artist} coverUrl={coverThumbnail(picked.coverUrl)} />
+            <AlbumCover title={picked.title} artist={picked.artist} coverUrl={coverThumbnail(picked.coverUrl)} cached={false} />
             <p className="min-w-0 flex-1 text-sm">
               <span className="block font-medium">Filled in from MusicBrainz</span>
               <span className="block text-muted">The cover will be saved with the album, if it has one.</span>
