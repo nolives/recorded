@@ -72,6 +72,15 @@
 
 Afterward, test account 2 still had both of its favorites.
 
-## 4. Test data to clean up
+## 4. Cleaning up again
 
-Test account 2 now has listens 24–26 and stars on *SOS* and *In Rainbows*. It also added the albums *SOS*, *Ctrl* and *In Rainbows* to the shared list, so these need the same cleanup as in section 1 before I log those albums myself.
+Testing added *SOS*, *Ctrl* and *In Rainbows* back into the shared album list under test account 2, along with 3 test listens and 2 stars.
+
+> "Yes, run it"
+
+**Agent:**
+- Previewed first. I had already logged 2 real albums (*ZIRP!* and *The Singer in My Band*), so the cleanup only removed rows from the test accounts.
+- It also only removed albums that no real user had logged or starred.
+- Afterward, only my 2 albums and 2 listens were left.
+
+**Agent decision I went along with:** future testing will use albums I'm unlikely to log, so the test data doesn't collide with my real diary.
