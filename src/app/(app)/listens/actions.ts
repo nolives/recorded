@@ -2,21 +2,27 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { validateListen, type ListenErrors, type ListenInput } from "@/lib/validation";
 
-export type ListenFormValues = {
-  title: string;
-  artist: string;
-  releaseYear: string;
-  genre: string;
-  listenedOn: string;
-  score: string;
-  review: string;
-};
+export type ListenFormValues = ListenInput;
 
 export type ListenFormState = {
   message?: string;
+  errors?: ListenErrors;
   values?: ListenFormValues;
 };
+
+// Runs the friendly checks. Returns a form state to show if anything is wrong.
+function checkForm(values: ListenFormValues): ListenFormState | null {
+  const errors = validateListen(values);
+  const count = Object.keys(errors).length;
+  if (count === 0) return null;
+  return {
+    errors,
+    values,
+    message: count === 1 ? "Fix the highlighted field to save." : `Fix the ${count} highlighted fields to save.`,
+  };
+}
 
 type Supabase = Awaited<ReturnType<typeof createClient>>;
 
@@ -74,13 +80,16 @@ async function findOrCreateAlbum(supabase: Supabase, values: ListenFormValues) {
   return created.id;
 }
 
-const SAVE_ERROR = "We couldn't save this listen. Check the fields and try again.";
+const SAVE_ERROR = "Something went wrong saving this listen. Please try again.";
 
 export async function createListen(
   _prev: ListenFormState,
   formData: FormData,
 ): Promise<ListenFormState> {
   const values = readForm(formData);
+  const problems = checkForm(values);
+  if (problems) return problems;
+
   const supabase = await createClient();
 
   let listenId: number;
@@ -111,6 +120,9 @@ export async function updateListen(
   formData: FormData,
 ): Promise<ListenFormState> {
   const values = readForm(formData);
+  const problems = checkForm(values);
+  if (problems) return problems;
+
   const supabase = await createClient();
 
   try {
