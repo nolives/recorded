@@ -1,0 +1,19 @@
+# Dependencies and build output
+node_modules/
+.next/
+out/
+build/
+.vercel/
+
+# Secrets: never commit these
+.env
+.env*.local
+
+# Test output
+coverage/
+
+# Mac files
+.DS_Store
+
+# Course materials (keep the assignment PDF out of the public repo)
+*.pdf
