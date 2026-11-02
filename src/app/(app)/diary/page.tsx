@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { AlbumCover } from "@/components/album-cover";
 import { ScoreBadge } from "@/components/score-badge";
+import { StarIcon } from "@/components/star-icon";
 import { formatListenDate } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 
@@ -10,12 +11,16 @@ export const metadata: Metadata = { title: "Diary · Recorded" };
 export default async function DiaryPage() {
   const supabase = await createClient();
 
-  // Row Level Security only returns the signed-in user's own listens.
-  const { data: listens, error } = await supabase
-    .from("listens")
-    .select("id, listened_on, score, albums (title, artist, release_year, cover_url)")
-    .order("listened_on", { ascending: false })
-    .order("created_at", { ascending: false });
+  // Row Level Security only returns the signed-in user's own listens and stars.
+  const [{ data: listens, error }, { data: stars }] = await Promise.all([
+    supabase
+      .from("listens")
+      .select("id, listened_on, score, albums (id, title, artist, release_year, cover_url)")
+      .order("listened_on", { ascending: false })
+      .order("created_at", { ascending: false }),
+    supabase.from("stars").select("album_id"),
+  ]);
+  const favoriteIds = new Set((stars ?? []).map((star) => star.album_id));
 
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-8">
@@ -60,7 +65,15 @@ export default async function DiaryPage() {
                 >
                   <AlbumCover title={album.title} artist={album.artist} coverUrl={album.cover_url} />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium">{album.title}</p>
+                    <p className="flex items-center gap-1.5 font-medium">
+                      <span className="truncate">{album.title}</span>
+                      {favoriteIds.has(album.id) ? (
+                        <>
+                          <StarIcon filled className="size-3.5 shrink-0 text-accent" />
+                          <span className="sr-only">(favorite)</span>
+                        </>
+                      ) : null}
+                    </p>
                     <p className="truncate text-sm text-muted">
                       {album.artist}
                       {album.release_year ? ` · ${album.release_year}` : ""}

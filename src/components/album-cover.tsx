@@ -2,12 +2,16 @@ type AlbumCoverProps = {
   title: string;
   artist: string;
   coverUrl?: string | null;
-  size?: "sm" | "lg";
+  size?: "sm" | "lg" | "fill";
 };
 
 // Shows the album cover, or a simple placeholder with the album's initials.
 export function AlbumCover({ title, artist, coverUrl, size = "sm" }: AlbumCoverProps) {
-  const box = size === "lg" ? "size-40 sm:size-56 text-4xl" : "size-14 text-base";
+  const box = {
+    sm: "size-14 text-base",
+    lg: "size-40 sm:size-56 text-4xl",
+    fill: "aspect-square w-full text-4xl", // as wide as its container
+  }[size];
 
   if (coverUrl) {
     return (
