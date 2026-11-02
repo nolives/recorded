@@ -5,36 +5,46 @@ import type { CurrentUser } from "@/lib/auth";
 export function SiteHeader({ user }: { user: CurrentUser | null }) {
   return (
     <header className="border-b border-line">
-      <div className="mx-auto flex h-14 w-full max-w-5xl items-center justify-between px-4">
+      {/* On phones the page links get their own row under the logo, so
+          nothing collides; from small tablets up, it's all one row. */}
+      <div className="mx-auto flex w-full max-w-5xl flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-3 sm:h-14 sm:flex-nowrap sm:py-0">
         <Link href="/" className="text-lg font-semibold tracking-tight">
           Recorded<span className="text-accent">.</span>
         </Link>
 
         {user ? (
-          <div className="flex items-center gap-3 text-sm sm:gap-4">
-            <nav className="flex items-center gap-3 sm:gap-4">
-              <Link href="/diary" className="hover:text-accent">
+          <>
+            <nav
+              aria-label="Main"
+              className="order-last flex w-full items-center justify-between text-sm sm:order-none sm:ml-auto sm:w-auto sm:justify-start sm:gap-4"
+            >
+              <Link href="/diary" className="py-1 hover:text-accent">
                 Diary
               </Link>
-              <Link href="/favorites" className="hover:text-accent">
+              <Link href="/favorites" className="py-1 hover:text-accent">
                 Favorites
               </Link>
-              <Link href="/listens/new" className="hover:text-accent">
+              <Link href="/dashboard" className="py-1 hover:text-accent">
+                Stats
+              </Link>
+              <Link href="/listens/new" className="py-1 hover:text-accent">
                 Log
               </Link>
             </nav>
-            {user.username ? (
-              <span className="hidden text-muted sm:inline">@{user.username}</span>
-            ) : null}
-            <form action={logOut}>
-              <button
-                type="submit"
-                className="rounded-md border border-line px-3 py-1.5 transition-colors hover:border-accent"
-              >
-                Log out
-              </button>
-            </form>
-          </div>
+            <div className="flex items-center gap-4 text-sm">
+              {user.username ? (
+                <span className="hidden text-muted sm:inline">@{user.username}</span>
+              ) : null}
+              <form action={logOut}>
+                <button
+                  type="submit"
+                  className="whitespace-nowrap rounded-md border border-line px-3 py-1.5 transition-colors hover:border-accent"
+                >
+                  Log out
+                </button>
+              </form>
+            </div>
+          </>
         ) : (
           <nav className="flex items-center gap-2 text-sm">
             <Link href="/login" className="px-3 py-1.5 hover:text-accent">

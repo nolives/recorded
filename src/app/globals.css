@@ -9,6 +9,10 @@
   --muted: #9a9ca3;
   --accent: #f5a524;
   --danger: #ff6b6b;
+  /* Chart bars: a deeper step of the accent. Bright #f5a524 is too loud as a
+     filled shape on the dark surface; this one passes the chart color checks
+     (lightness 0.48-0.67 on dark, enough color, 3:1 contrast). */
+  --chart: #c4811b;
   color-scheme: dark;
 }
 
@@ -20,6 +24,7 @@
   --color-muted: var(--muted);
   --color-accent: var(--accent);
   --color-danger: var(--danger);
+  --color-chart: var(--chart);
   --font-sans: var(--font-inter);
 }
 
