@@ -1,0 +1,106 @@
+
+> recorded@0.1.0 test
+> vitest run --reporter=verbose
+
+
+ RUN  v5.1.0 /Users/nickolives/code/solo-app
+
+ ✓ tests/data-isolation.test.ts > Data isolation: User B can't see User A's listens > set-up check: User A can see their own listen 125ms
+ × tests/data-isolation.test.ts > Data isolation: User B can't see User A's listens > User B's diary is empty 118ms
+   → expected [ 23, 28, 31, 32, 34, 35, 37, …(12) ] to deeply equal []
+ × tests/data-isolation.test.ts > Data isolation: User B can't see User A's listens > asking the database directly for User A's listen by its id returns nothing 53ms
+   → expected { id: 50 } to be null
+ × tests/data-isolation.test.ts > Data isolation: User B can't see User A's listens > User B can't change or delete User A's listen either 190ms
+   → expected [ { id: 50 } ] to deeply equal []
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/data-isolation.test.ts > Data isolation: User B can't see User A's listens > User B's diary is empty
+AssertionError: expected [ 23, 28, 31, 32, 34, 35, 37, …(12) ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   23,
++   28,
++   31,
++   32,
++   34,
++   35,
++   37,
++   39,
++   40,
++   36,
++   38,
++   41,
++   33,
++   30,
++   42,
++   43,
++   29,
++   44,
++   50,
++ ]
+
+ ❯ tests/data-isolation.test.ts:60:40
+     58|     const { data, error } = await userB.from("listens").select("id, al…
+     59|     expect(error).toBeNull();
+     60|     expect(data?.map((row) => row.id)).toEqual([]);
+       |                                        ^
+     61|   });
+     62|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
+
+ FAIL  tests/data-isolation.test.ts > Data isolation: User B can't see User A's listens > asking the database directly for User A's listen by its id returns nothing
+AssertionError: expected { id: 50 } to be null
+
+- Expected:
+null
+
++ Received:
+{
+  "id": 50,
+}
+
+ ❯ tests/data-isolation.test.ts:66:18
+     64|     const { data, error } = await userB.from("listens").select("id").e…
+     65|     expect(error).toBeNull();
+     66|     expect(data).toBeNull();
+       |                  ^
+     67|   });
+     68|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯
+
+ FAIL  tests/data-isolation.test.ts > Data isolation: User B can't see User A's listens > User B can't change or delete User A's listen either
+AssertionError: expected [ { id: 50 } ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   {
++     "id": 50,
++   },
++ ]
+
+ ❯ tests/data-isolation.test.ts:76:27
+     74|       .select("id");
+     75|     const { data: deleted } = await userB.from("listens").delete().eq(…
+     76|     expect(changed ?? []).toEqual([]);
+       |                           ^
+     77|     expect(deleted ?? []).toEqual([]);
+     78|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  3 failed | 1 passed (4)
+   Start at  16:47:32
+   Duration  2.09s (tests 98%, import 2%)
+

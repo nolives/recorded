@@ -1,0 +1,17 @@
+
+> recorded@0.1.0 test
+> vitest run --reporter=verbose
+
+
+ RUN  v5.1.0 /Users/nickolives/code/solo-app
+
+ ✓ tests/data-isolation.test.ts > Data isolation: User B can't see User A's listens > set-up check: User A can see their own listen 68ms
+ ✓ tests/data-isolation.test.ts > Data isolation: User B can't see User A's listens > User B's diary is empty 68ms
+ ✓ tests/data-isolation.test.ts > Data isolation: User B can't see User A's listens > asking the database directly for User A's listen by its id returns nothing 58ms
+ ✓ tests/data-isolation.test.ts > Data isolation: User B can't see User A's listens > User B can't change or delete User A's listen either 314ms
+
+ Test Files  1 passed (1)
+      Tests  4 passed (4)
+   Start at  16:48:04
+   Duration  1.90s (tests 99%, import 1%)
+
