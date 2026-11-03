@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ListensChart } from "@/components/listens-chart";
+import { ColumnChart } from "@/components/column-chart";
 import { diaryHref } from "@/lib/diary-filters";
 import { loadDashboardStats } from "@/lib/dashboard-data";
 import { createClient } from "@/lib/supabase/server";
@@ -103,7 +103,39 @@ export default async function DashboardPage() {
             </StatTile>
           </div>
 
-          <ListensChart months={stats.months} />
+          <ColumnChart
+            id="per-month"
+            title="Listens per month"
+            subtitle="The last 12 months"
+            nameHeader="Month"
+            everyOtherLabelOnPhones
+            columns={stats.months.map((month) => ({
+              key: month.month,
+              axisLabel: month.short,
+              name: month.long,
+              count: month.count,
+            }))}
+          />
+
+          {stats.scoredListens > 0 ? (
+            <ColumnChart
+              id="scores"
+              title="How you score"
+              subtitle="How many listens got each score"
+              nameHeader="Score"
+              columns={stats.scores.map(({ score, count }) => ({
+                key: String(score),
+                axisLabel: String(score),
+                name: `Scored ${score}/10`,
+                count,
+              }))}
+              footnote={
+                stats.unscoredListens > 0
+                  ? `${stats.unscoredListens} ${stats.unscoredListens === 1 ? "listen has" : "listens have"} no score, so ${stats.unscoredListens === 1 ? "it isn't" : "they aren't"} shown (or counted in the average).`
+                  : undefined
+              }
+            />
+          ) : null}
         </div>
       )}
     </main>

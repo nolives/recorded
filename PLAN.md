@@ -202,5 +202,6 @@ Who made each call is in brackets: **(me)** means it was my decision; **(agent)*
 |---|---|---|---|---|
 | Search by artist | Shipped | Done | Watching someone else use the app showed the search was hard to use | Added as my stranger-test fix, because it was their biggest struggle **(me)**. [#34](https://github.com/nolives/recorded/pull/34) |
 | Favorite checkbox when logging | Shipped | Done | Small time-savers only show up when someone else uses the app | Added because it was the stranger test's second struggle **(me)**. [#35](https://github.com/nolives/recorded/pull/35) |
+| Score distribution chart ("How you score") | Shipped | Done | An average hides the spread; a second chart shows what the 7.8 is made of | Added to Stats because the average alone didn't show how I score **(me)**. [#39](https://github.com/nolives/recorded/pull/39) |
 | Top 5 albums on the profile | Cut | Backlogged | A backlog Issue kept a good idea from growing a planned feature | Kept for later, because the Favorites shelf already covers it **(me)**. [Issue #7](https://github.com/nolives/recorded/issues/7) |
 | A fuller home page | Cut | Backlogged | Not every struggle needs fixing now; logging works without it | Not fixed before the demo, because "bare-bones" is cosmetic and blocks no one **(me)**. |

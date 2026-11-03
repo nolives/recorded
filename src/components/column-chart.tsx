@@ -1,4 +1,8 @@
-import type { MonthCount } from "@/lib/stats";
+import type { ReactNode } from "react";
+
+// One column: its short axis label ("Oct", "8"), its full name for the
+// tooltip and table ("October 2026", "Scored 8/10"), and its count.
+export type Column = { key: string; axisLabel: string; name: string; count: number };
 
 // Picks tidy axis numbers: steps of 1, 2, 5, 10, 20, 50… with about 4 steps.
 function axisTicks(max: number) {
@@ -15,23 +19,40 @@ function axisTicks(max: number) {
 
 const plural = (count: number) => `${count} ${count === 1 ? "listen" : "listens"}`;
 
-// Column chart of listens per month. One series, so no legend: the title
-// says what's plotted. Hover or tab to a column to see its month and count;
-// the same numbers are in the table underneath.
-export function ListensChart({ months }: { months: MonthCount[] }) {
-  const max = Math.max(...months.map((month) => month.count));
+// A column chart of listen counts, used for "Listens per column" and "How you
+// score". One series, so no legend: the title says what's plotted. Hover or
+// tab to a column to see its name and count; the same numbers are in the
+// table underneath.
+export function ColumnChart({
+  id,
+  title,
+  subtitle,
+  columns,
+  nameHeader,
+  everyOtherLabelOnPhones = false,
+  footnote,
+}: {
+  id: string;
+  title: string;
+  subtitle: string;
+  columns: Column[];
+  nameHeader: string; // the table's first column heading, like "Month"
+  everyOtherLabelOnPhones?: boolean; // for long rows of labels like columns
+  footnote?: ReactNode;
+}) {
+  const max = Math.max(...columns.map((column) => column.count));
   const ticks = axisTicks(max);
   const top = ticks[ticks.length - 1];
-  // Label only the busiest month (the most recent one, if tied), so the
-  // chart isn't covered in numbers.
-  const busiest = max > 0 ? months.findLastIndex((month) => month.count === max) : -1;
+  // Label only the tallest column (the last one, if tied), so the chart
+  // isn't covered in numbers.
+  const busiest = max > 0 ? columns.findLastIndex((column) => column.count === max) : -1;
 
   return (
-    <section aria-labelledby="chart-title" className="rounded-lg border border-line bg-surface p-4 sm:p-5">
-      <h2 id="chart-title" className="font-semibold">
-        Listens per month
+    <section aria-labelledby={`${id}-title`} className="rounded-lg border border-line bg-surface p-4 sm:p-5">
+      <h2 id={`${id}-title`} className="font-semibold">
+        {title}
       </h2>
-      <p className="text-sm text-muted">The last 12 months</p>
+      <p className="text-sm text-muted">{subtitle}</p>
 
       <div className="mt-6 flex gap-2">
         {/* Axis numbers */}
@@ -62,13 +83,13 @@ export function ListensChart({ months }: { months: MonthCount[] }) {
             {/* Columns. Each whole slot is the hover/focus target, not just
                 the painted bar, so short bars are easy to hit. */}
             <ol className="absolute inset-0 flex">
-              {months.map((month, index) => {
-                const height = (month.count / top) * 100;
+              {columns.map((column, index) => {
+                const height = (column.count / top) * 100;
                 return (
                   <li
-                    key={month.month}
+                    key={column.key}
                     tabIndex={0}
-                    aria-label={`${month.long}: ${plural(month.count)}`}
+                    aria-label={`${column.name}: ${plural(column.count)}`}
                     className="group relative flex h-full flex-1 items-end justify-center px-px outline-none"
                   >
                     <div
@@ -81,19 +102,19 @@ export function ListensChart({ months }: { months: MonthCount[] }) {
                         className="absolute text-xs font-medium tabular-nums group-hover:opacity-0 group-focus-visible:opacity-0"
                         style={{ bottom: `calc(${height}% + 4px)` }}
                       >
-                        {month.count}
+                        {column.count}
                       </span>
                     ) : null}
-                    {/* Tooltip: the value leads, the month follows */}
+                    {/* Tooltip: the value leads, the column follows */}
                     <span
                       aria-hidden="true"
                       className={`pointer-events-none absolute z-10 hidden whitespace-nowrap rounded-md border border-line bg-background px-2 py-1 text-xs shadow-lg group-hover:block group-focus-visible:block ${
-                        index < 3 ? "left-0" : index > months.length - 4 ? "right-0" : "left-1/2 -translate-x-1/2"
+                        index < 3 ? "left-0" : index > columns.length - 4 ? "right-0" : "left-1/2 -translate-x-1/2"
                       }`}
                       style={{ bottom: `calc(${height}% + 8px)` }}
                     >
-                      <span className="block font-semibold">{plural(month.count)}</span>
-                      <span className="block text-muted">{month.long}</span>
+                      <span className="block font-semibold">{plural(column.count)}</span>
+                      <span className="block text-muted">{column.name}</span>
                     </span>
                   </li>
                 );
@@ -101,34 +122,38 @@ export function ListensChart({ months }: { months: MonthCount[] }) {
             </ol>
           </div>
 
-          {/* Month names; every other one on narrow screens so they don't collide */}
+          {/* Axis labels; optionally every other one on narrow screens so long rows don't collide */}
           <ol aria-hidden="true" className="mt-2 flex text-center text-xs text-muted">
-            {months.map((month, index) => (
+            {columns.map((column, index) => (
               <li
-                key={month.month}
-                className={`flex-1 ${index % 2 === (months.length - 1) % 2 ? "" : "invisible sm:visible"}`}
+                key={column.key}
+                className={`flex-1 ${
+                  !everyOtherLabelOnPhones || index % 2 === (columns.length - 1) % 2 ? "" : "invisible sm:visible"
+                }`}
               >
-                {month.short}
+                {column.axisLabel}
               </li>
             ))}
           </ol>
         </div>
       </div>
 
+      {footnote ? <p className="mt-3 text-sm text-muted">{footnote}</p> : null}
+
       <details className="mt-4 text-sm">
         <summary className="cursor-pointer text-muted hover:text-foreground">Show as a table</summary>
         <table className="mt-2 w-full max-w-xs">
           <thead>
             <tr className="text-left text-muted">
-              <th scope="col" className="py-1 font-normal">Month</th>
+              <th scope="col" className="py-1 font-normal">{nameHeader}</th>
               <th scope="col" className="py-1 text-right font-normal">Listens</th>
             </tr>
           </thead>
           <tbody className="tabular-nums">
-            {months.map((month) => (
-              <tr key={month.month} className="border-t border-line">
-                <td className="py-1">{month.long}</td>
-                <td className="py-1 text-right">{month.count}</td>
+            {columns.map((column) => (
+              <tr key={column.key} className="border-t border-line">
+                <td className="py-1">{column.name}</td>
+                <td className="py-1 text-right">{column.count}</td>
               </tr>
             ))}
           </tbody>
