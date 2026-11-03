@@ -30,10 +30,17 @@ export function SiteHeader({ user }: { user: CurrentUser | null }) {
               <Link href="/listens/new" className="py-1 hover:text-accent">
                 Log
               </Link>
+              {user.username ? (
+                <Link href={`/u/${user.username}`} className="py-1 hover:text-accent">
+                  Profile
+                </Link>
+              ) : null}
             </nav>
             <div className="flex items-center gap-4 text-sm">
               {user.username ? (
-                <span className="hidden text-muted sm:inline">@{user.username}</span>
+                <Link href="/settings" className="hidden text-muted hover:text-accent sm:inline" title="Settings">
+                  @{user.username}
+                </Link>
               ) : null}
               <form action={logOut}>
                 <button

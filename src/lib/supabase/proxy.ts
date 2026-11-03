@@ -3,6 +3,9 @@ import { NextResponse, type NextRequest } from "next/server";
 
 // Pages anyone can open without an account.
 const PUBLIC_PATHS = ["/", "/login", "/signup"];
+// Shared profiles (/u/<username>) can be opened without an account too.
+// The page itself decides whether that profile is shared.
+const PUBLIC_PREFIXES = ["/u/"];
 // Pages only for logged-out visitors.
 const LOGGED_OUT_ONLY = ["/login", "/signup"];
 
@@ -39,7 +42,9 @@ export async function updateSession(request: NextRequest) {
   const isLoggedIn = Boolean(data?.claims);
   const path = request.nextUrl.pathname;
 
-  if (!isLoggedIn && !PUBLIC_PATHS.includes(path)) {
+  const isPublic = PUBLIC_PATHS.includes(path) || PUBLIC_PREFIXES.some((prefix) => path.startsWith(prefix));
+
+  if (!isLoggedIn && !isPublic) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = "/login";
     loginUrl.search = `?next=${encodeURIComponent(path)}`;
