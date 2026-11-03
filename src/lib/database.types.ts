@@ -136,21 +136,24 @@ export type Database = {
           created_at: string
           display_name: string | null
           id: string
-          is_public: boolean
+          share_token: string | null
+          sharing: string
           username: string
         }
         Insert: {
           created_at?: string
           display_name?: string | null
           id: string
-          is_public?: boolean
+          share_token?: string | null
+          sharing?: string
           username: string
         }
         Update: {
           created_at?: string
           display_name?: string | null
           id?: string
-          is_public?: boolean
+          share_token?: string | null
+          sharing?: string
           username?: string
         }
         Relationships: []
@@ -193,7 +196,47 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      shared_favorites: {
+        Args: { p_key?: string; p_username: string }
+        Returns: {
+          album_id: number
+          artist: string
+          cover_url: string
+          release_year: number
+          starred_at: string
+          title: string
+        }[]
+      }
+      shared_listens: {
+        Args: { p_key?: string; p_username: string }
+        Returns: {
+          album_id: number
+          artist: string
+          cover_url: string
+          genre: string
+          id: number
+          listened_on: string
+          release_year: number
+          review: string
+          score: number
+          title: string
+        }[]
+      }
+      shared_profile: {
+        Args: { p_key?: string; p_username: string }
+        Returns: {
+          display_name: string
+          is_owner: boolean
+          joined_at: string
+          sharing: string
+          username: string
+        }[]
+      }
       username_available: { Args: { name: string }; Returns: boolean }
+      visible_profile_id: {
+        Args: { p_key: string; p_username: string }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never

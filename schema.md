@@ -25,7 +25,8 @@ erDiagram
         uuid id PK "same id as the login account"
         text username "unique, 3-20 lowercase letters, numbers, _"
         text display_name "optional"
-        boolean is_public "default false"
+        text sharing "private, link or public; default private"
+        uuid share_token "secret part of a Link only link"
         timestamptz created_at
     }
     albums {
@@ -65,7 +66,8 @@ erDiagram
 | `id` | uuid | **Primary key.** Same id as the Supabase login account (`auth.users`). Deleting the account deletes the profile |
 | `username` | text | Required, unique, 3–20 lowercase letters, numbers, or underscores |
 | `display_name` | text | Optional |
-| `is_public` | true/false | Defaults to false. Placeholder from the plan; feature 10 will replace it with a three-way sharing setting (see below) |
+| `sharing` | text | Who can see the profile page at `/u/<username>`: `private` (default, only you), `link` (anyone with the secret link), or `public` (anyone). Replaced the planned `is_public` on/off in feature 10 |
+| `share_token` | uuid | The secret part of a Link only link (`/u/<username>?key=<share_token>`). Made the first time Link only is picked; "Reset link" replaces it so old links stop working. Never shown to visitors |
 | `created_at` | date/time | Set automatically |
 
 A database trigger creates the profile automatically when someone signs up, using the username they typed. Passwords are **not** stored here; Supabase keeps them hashed in its own `auth.users` table.
@@ -122,18 +124,28 @@ Each table has Row Level Security turned on. The database itself checks who is a
 
 | Table | Read | Add | Edit | Delete |
 |---|---|---|---|---|
-| `profiles` | Own row only | (Created automatically at sign-up) | Own row only | — |
+| `profiles` | Own row only | (Created automatically at sign-up) | Own row only, and only `display_name`, `sharing`, `share_token` (not `username`) | — |
 | `albums` | Any signed-in user | Any signed-in user (recorded as added by them) | Only the user who added it | Nobody |
 | `listens` | Own rows only | Only as yourself | Own rows only | Own rows only |
 | `stars` | Own rows only | Only as yourself | — | Own rows only |
 
-Logged-out visitors can't read any table. The only exception is a small `username_available` function that the sign-up form uses to check whether a username is taken.
+Logged-out visitors can't read any table. Everything they can see goes through small database functions:
+
+- **`username_available(name)`**: the sign-up form checks whether a username is taken.
+- **`shared_profile`, `shared_listens`, `shared_favorites`** (feature 10): what the profile page at `/u/<username>` shows. Each one first runs an internal check, `visible_profile_id`, which nobody can call directly. It allows the profile only if:
+  - it's **public**, or
+  - it's **link only** and the right key was given, or
+  - the viewer is the owner.
+
+  Otherwise it returns **nothing at all**, so a private profile looks exactly like one that doesn't exist. These functions never return `share_token`.
+
+These checks are tested with two accounts and a logged-out visitor in `supabase/checks/profile_privacy.mjs` (18 checks).
 
 ## Compared with PLAN.md section 3
 
 | Planned | Built | Same? |
 |---|---|---|
-| `profiles` users table with `id`, `username`, `display_name`, `is_public`, `created_at` | Same columns. Built in **feature 1** instead of feature 2, because sign-up needed it | Yes, built earlier |
+| `profiles` users table with `id`, `username`, `display_name`, `is_public`, `created_at` | Built in **feature 1** instead of feature 2, because sign-up needed it. `is_public` replaced by `sharing` + `share_token` in feature 10 | Built earlier; changed |
 | `albums` with title, artist, release year, genre, cover URL, iTunes id, added by | Same columns, plus `musicbrainz_id` | **Changed** (my decision after real use): iTunes search couldn't find some albums I logged, like *Perfecth* and *Reality Awaits*, so search moved to MusicBrainz. `itunes_id` stays for albums saved before the switch |
 | Only the user who added an album can edit its details | Enforced by a privacy rule | Yes |
 | `listens` with date, **required** score 1–10, optional review | Same columns, but the **score is optional** | **Changed** (my decision during feature 2): I want to log an album I listened to without scoring it yet |
@@ -141,4 +153,4 @@ Logged-out visitors can't read any table. The only exception is a small `usernam
 | — | Albums can't be deleted by anyone | **Added**: the plan didn't say. Albums are shared, so deleting one could break other users' listens |
 | `stars` with (user, album) as the primary key | Same | Yes |
 | Signed-in users can read albums; listens and stars are private | Enforced by Row Level Security | Yes |
-| Public profile on/off with `is_public` | **Changed** (my decision during feature 2): three settings instead, **Private**, **Link only** (a secret, resettable link), or **Public** (`/u/username`). Built in feature 10 | Not yet built |
+| Public profile on/off with `is_public` | **Changed** (my decisions during features 2 and 10): three settings, **Private**, **Link only** (a secret, resettable link), or **Public** (`/u/username`), for one **profile page** with favorites, recent listens and the full diary | Built in feature 10 |
