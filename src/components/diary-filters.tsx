@@ -104,7 +104,7 @@ export function DiaryFiltersBar({ filters, genres }: { filters: DiaryFilters; ge
         </select>
       </label>
 
-      <div className="col-span-2 flex h-10 items-center gap-3 text-sm sm:col-span-1">
+      <div className="col-span-2 flex items-center gap-3 text-sm sm:col-span-1 sm:h-10">
         {/* Only needed without JavaScript; with it, the list updates by itself. */}
         <noscript>
           <button type="submit" className="rounded-md border border-line px-3 py-1.5">

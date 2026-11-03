@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { AlbumCover } from "@/components/album-cover";
 import { DiaryFiltersBar } from "@/components/diary-filters";
+import { RelistenPicker } from "@/components/relisten-picker";
 import { ScoreBadge } from "@/components/score-badge";
 import { StarIcon } from "@/components/star-icon";
 import { readFilters, titleOrArtistFilter, type Sort } from "@/lib/diary-filters";
@@ -86,6 +87,7 @@ export default async function DiaryPage({ searchParams }: PageProps<"/diary">) {
         </Link>
       </div>
 
+      {total > 0 ? <RelistenPicker /> : null}
       {total > 0 ? <DiaryFiltersBar filters={filters} genres={genres} /> : null}
 
       {error ? (
