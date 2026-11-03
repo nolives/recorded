@@ -9,6 +9,15 @@ export type FoundAlbum = {
   year: string;
   genre: string;
   coverUrl: string;
+  // "Live", "Compilation" and so on; empty for a studio album or EP.
+  kind: string;
+};
+
+export type FoundArtist = {
+  mbid: string;
+  name: string;
+  // What tells same-named artists apart, like "US rock band" or "Group · US".
+  detail: string;
 };
 
 // The parts of a MusicBrainz release group we use.
@@ -17,8 +26,18 @@ type ReleaseGroup = {
   title?: string;
   "primary-type"?: string | null;
   "first-release-date"?: string;
+  "secondary-types"?: string[];
   "artist-credit"?: { name: string; joinphrase?: string }[];
   genres?: { name: string; count: number }[];
+};
+
+// The parts of a MusicBrainz artist we use.
+type Artist = {
+  id?: string;
+  name?: string;
+  disambiguation?: string;
+  type?: string;
+  country?: string;
 };
 
 const API = "https://musicbrainz.org/ws/2";
@@ -67,15 +86,38 @@ export function toFoundAlbum(group: ReleaseGroup): FoundAlbum | null {
     year: group["first-release-date"]?.slice(0, 4) ?? "",
     genre: topGenre ? titleCase(topGenre.name) : "",
     coverUrl: coverUrlFor(group.id),
+    kind: (group["secondary-types"] ?? []).join(", "),
   };
 }
 
-// Address for a search. Characters MusicBrainz treats as search commands
-// (like quotes or colons) become spaces so any typing works.
+export function toFoundArtist(artist: Artist): FoundArtist | null {
+  if (!artist.id || !artist.name) return null;
+  const detail = artist.disambiguation || [artist.type, artist.country].filter(Boolean).join(" · ");
+  return { mbid: artist.id, name: artist.name, detail };
+}
+
+// Characters MusicBrainz treats as search commands (like quotes or colons)
+// become spaces, so any typing works.
+function plainSearch(term: string) {
+  return term.replace(/[+\-&|!(){}[\]^"~*?:\\/]/g, " ").trim();
+}
+
+// Address for an album search ("Album" mode).
 export function searchUrl(term: string) {
-  const query = term.replace(/[+\-&|!(){}[\]^"~*?:\\/]/g, " ").trim();
-  const params = new URLSearchParams({ query, fmt: "json", limit: "25" });
+  const params = new URLSearchParams({ query: plainSearch(term), fmt: "json", limit: "25" });
   return `${API}/release-group/?${params}`;
+}
+
+// Address for an artist search ("Artist" mode, step 1).
+export function artistSearchUrl(term: string) {
+  const params = new URLSearchParams({ query: plainSearch(term), fmt: "json", limit: "6" });
+  return `${API}/artist/?${params}`;
+}
+
+// Address for one artist's albums and EPs ("Artist" mode, step 2). Up to
+// 100, which covers almost every artist.
+export function artistAlbumsUrl(artistMbid: string) {
+  return `${API}/release-group?artist=${artistMbid}&type=album|ep&inc=artist-credits&fmt=json&limit=100`;
 }
 
 // Address for one album, with its genres.
@@ -103,9 +145,10 @@ export async function lookupAlbum(mbid: string): Promise<FoundAlbum | null | "un
         signal: AbortSignal.timeout(6000),
       });
     let response = await ask();
-    // 503 means "too many requests right now": wait a moment, try once more.
-    if (response.status === 503) {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+    // 503 means "too many requests right now", for us or for MusicBrainz
+    // as a whole: wait a little longer each time, up to 3 more tries.
+    for (let attempt = 1; response.status === 503 && attempt <= 3; attempt++) {
+      await new Promise((resolve) => setTimeout(resolve, 1500 * attempt));
       response = await ask();
     }
     if (response.status === 404 || response.status === 400) return null;
