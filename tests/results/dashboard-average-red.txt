@@ -1,0 +1,31 @@
+
+ RUN  v5.1.0 /Users/nickolives/code/solo-app
+
+ × tests/dashboard-average.test.ts > Dashboard: User A's average score > User A's average score is 8.3 (25 ÷ 3, rounded to one decimal) 150ms
+   → expected '8' to be '8.3' // Object.is equality
+ ✓ tests/dashboard-average.test.ts > Dashboard: User A's average score > only User A's 3 listens count, not User B's 2 119ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/dashboard-average.test.ts > Dashboard: User A's average score > User A's average score is 8.3 (25 ÷ 3, rounded to one decimal)
+AssertionError: expected '8' to be '8.3' // Object.is equality
+
+Expected: "8.3"
+Received: "8"
+
+ ❯ tests/dashboard-average.test.ts:57:32
+     55|     const { stats, failed } = await loadDashboardStats(userA);
+     56|     expect(failed).toBe(false);
+     57|     expect(stats.averageScore).toBe("8.3");
+       |                                ^
+     58|   });
+     59|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 1 passed (2)
+   Start at  16:58:18
+   Duration  1.95s (tests 98%, import 1%, transform 1%)
+

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ListensChart } from "@/components/listens-chart";
 import { diaryHref } from "@/lib/diary-filters";
-import { dashboardStats } from "@/lib/stats";
+import { loadDashboardStats } from "@/lib/dashboard-data";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Stats · Recorded" };
@@ -36,16 +36,8 @@ function StatTile({
 export default async function DashboardPage() {
   const supabase = await createClient();
 
-  // Row Level Security only returns the signed-in user's own listens.
-  const { data, error } = await supabase.from("listens").select("listened_on, score, albums (genre)");
-
-  const stats = dashboardStats(
-    (data ?? []).map((listen) => ({
-      listened_on: listen.listened_on,
-      score: listen.score,
-      genre: listen.albums?.genre ?? null,
-    })),
-  );
+  // Shared with the dashboard test, so the test checks what this page shows.
+  const { stats, failed: error } = await loadDashboardStats(supabase);
 
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-8">

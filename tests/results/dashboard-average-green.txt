@@ -1,0 +1,11 @@
+
+ RUN  v5.1.0 /Users/nickolives/code/solo-app
+
+ ✓ tests/dashboard-average.test.ts > Dashboard: User A's average score > User A's average score is 8.3 (25 ÷ 3, rounded to one decimal) 81ms
+ ✓ tests/dashboard-average.test.ts > Dashboard: User A's average score > only User A's 3 listens count, not User B's 2 63ms
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  16:58:37
+   Duration  1.55s (tests 98%, import 2%)
+
