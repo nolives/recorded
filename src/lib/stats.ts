@@ -23,7 +23,11 @@ export type DashboardStats = {
   averageScore: string | null; // "8.3", or null if nothing is scored
   topGenre: { name: string; count: number } | null;
   months: MonthCount[]; // oldest first, ending with the current month
+  scores: ScoreCount[]; // one entry for each score from 1 to 10
+  unscoredListens: number; // left out of the average and the score chart
 };
+
+export type ScoreCount = { score: number; count: number };
 
 const MONTHS_SHOWN = 12;
 
@@ -68,11 +72,19 @@ export function dashboardStats(listens: StatsListen[], today = new Date()): Dash
     if (perMonth.has(month)) perMonth.set(month, (perMonth.get(month) ?? 0) + 1);
   }
 
+  // How many listens got each score, 1 to 10 (including scores nobody used).
+  const scoreCounts: ScoreCount[] = Array.from({ length: 10 }, (_, i) => ({ score: i + 1, count: 0 }));
+  for (const { score } of listens) {
+    if (score !== null && score >= 1 && score <= 10) scoreCounts[score - 1].count++;
+  }
+
   return {
     totalListens: listens.length,
     scoredListens: scores.filter((score) => score !== null).length,
     averageScore: averageScore(scores),
     topGenre: topGenre ? { name: topGenre[0], count: topGenre[1] } : null,
     months: [...perMonth.entries()].map(([month, count]) => ({ month, ...monthNames(month), count })),
+    scores: scoreCounts,
+    unscoredListens: listens.length - scores.filter((score) => score !== null).length,
   };
 }
