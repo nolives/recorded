@@ -164,3 +164,43 @@ Both tests run against a separate free Supabase **test** project, so they use th
 - **Other risks:**
   - The iTunes search could fail or return wrong matches. Manual entry always stays available as a fallback.
   - Free Supabase projects pause after a week without use. I'll use the app weekly and check that it's awake before the demo and grading.
+
+---
+
+## Plan vs. Reality
+
+*Added Nov 3, 2026, after building. Everything above this line is the original plan, unchanged.*
+
+"Who decided" is in brackets: **(me)** means it was my call; **(agent)** means the agent made the call and I went along. The trail for each row is in the linked PR and its prompt log in [`prompts/`](prompts).
+
+| Planned feature | Shipped / Changed / Cut | Status (Done/Backlogged) | Learning | What changed and why (one line) |
+|---|---|---|---|---|
+| 1. Sign up and login | Shipped | Done | Sign-up needed somewhere to store the username, so the users table couldn't wait for feature 2 | Built the `profiles` users table in feature 1 instead of feature 2 **(agent)**. [#4](https://github.com/nolives/recorded/pull/4) |
+| 2. Data model | Changed | Done | My plan said "five tables" but only described four (plus Supabase's own login table), which a fresh agent could misread | Score became optional **(me)**; reviews capped at 2,000 characters and shared albums made undeletable **(agent)**; later a `musicbrainz_id` column and sharing columns. [#6](https://github.com/nolives/recorded/pull/6), [#17](https://github.com/nolives/recorded/pull/17), [#28](https://github.com/nolives/recorded/pull/28) |
+| 3. Log, view, edit, delete listens | Shipped | Done | With a shared album list, only the person who first added an album can edit its year and genre | As planned, with an "Are you sure?" dialog before deleting. [#9](https://github.com/nolives/recorded/pull/9) |
+| 4. Validation | Changed | Done | Checks have to run on the server too: I proved it by sending a score of 11 straight past the form | "No score" is allowed now that the score is optional **(me)**; date, year and length checks added **(agent)**. A score-reset bug from here was caught later, in #13. [#11](https://github.com/nolives/recorded/pull/11) |
+| 5. Stars (Favorites page) | Shipped | Done | Holding an idea until a real user asks for it worked: the stranger test asked for the checkbox I'd shelved | Favorites page and ★ in the diary as planned; a Favorite checkbox on the Log form came later from the stranger test **(me)**. [#15](https://github.com/nolives/recorded/pull/15), [#35](https://github.com/nolives/recorded/pull/35) |
+| 6. Find things | Shipped | Done | Anything a user types has to be made harmless before it reaches the database | As planned; filters live in the page address, and unscored listens sort last **(me)**. [#19](https://github.com/nolives/recorded/pull/19) |
+| 7. Dashboard | Changed | Done | My amber accent failed the chart color checks as a filled bar on the dark background | Called "Stats"; the chart was built without the planned Recharts library, never discussed with me **(agent)**; bars use a deeper accent **(agent)**. [#22](https://github.com/nolives/recorded/pull/22) |
+| 8. iTunes album autofill | Changed | Done | Real use found what testing missed: iTunes search couldn't find albums I was logging (*Perfecth*, *Reality Awaits*) | Moved from 8th to 5th **(me)**, then switched to MusicBrainz + Cover Art Archive after the agent compared both **(me)**, plus an Artist search mode from the stranger test **(me)**. [#13](https://github.com/nolives/recorded/pull/13), [#17](https://github.com/nolives/recorded/pull/17), [#34](https://github.com/nolives/recorded/pull/34) |
+| 9. Random re-listen button | Shipped | Done | "Haven't played in a while" needed a concrete rule before it could be built | Picks albums scored 8+, preferring ones not logged in 30 days **(agent)**; "Log a listen" opens the form already filled in **(agent)**. [#26](https://github.com/nolives/recorded/pull/26) |
+| 10. Public profile link | Changed | Done | My riskiest feature was safest built so visitors never touch the tables, only database functions that check the sharing setting first | Became three settings, Private / Link only / Public **(me)**, on one profile page with favorites, recent listens and the full diary **(me)**; not cut, even though the plan said it would go first. [#28](https://github.com/nolives/recorded/pull/28) |
+
+**Other parts of the plan**
+
+| Planned | Shipped / Changed / Cut | Status (Done/Backlogged) | Learning | What changed and why (one line) |
+|---|---|---|---|---|
+| Section 2: build order | Changed | Done | Having real albums in the app made the later features easier to build and test | Autofill moved from 8th to 5th so I could log my real albums sooner; the agent suggested it **(me)**. [#11](https://github.com/nolives/recorded/pull/11) |
+| Section 4: tests in a separate test project | Changed | Done | An honest red step for data isolation means actually turning the privacy rules off | Ran against the live database with two throwaway accounts; with only my own data in it, a few seconds with the rules off was an acceptable risk **(me)**. [#30](https://github.com/nolives/recorded/pull/30), [#32](https://github.com/nolives/recorded/pull/32) |
+| Section 5: iTunes Search API, Recharts | Changed | Done | Picking tools before using them with real data is a guess | MusicBrainz replaced iTunes **(me)**; no Recharts **(agent)**; Next.js, Supabase, Vercel, Tailwind and Vitest as planned. |
+| Section 6: amber accent (`#F5A524`) | Changed | Done | Comparing real mockups beat picking a color in the abstract | Switched to violet (`#A78BFA`) after comparing five mockups **(me)**; still dark and moody. [#24](https://github.com/nolives/recorded/pull/24) |
+| Section 7: risks | Changed | Done | The feature I was least sure of (profiles) shipped fine; the real trouble came from a risk I'd listed as minor (album search) | iTunes "wrong matches" turned out to be "missing albums", and fixing it took a whole switch of data source. |
+
+**Added after the plan**
+
+| Not in the plan | Shipped / Changed / Cut | Status (Done/Backlogged) | Learning | What changed and why (one line) |
+|---|---|---|---|---|
+| Search by artist | Shipped | Done | Watching someone else use it showed the search was hard to use | My stranger tester's biggest struggle; fixed **(me)**. [#34](https://github.com/nolives/recorded/pull/34) |
+| Favorite checkbox when logging | Shipped | Done | Small time-savers only show up when someone else uses the app | The stranger test's second struggle **(me)**. [#35](https://github.com/nolives/recorded/pull/35) |
+| Top 5 albums on the profile | Backlogged | Backlogged | A backlog Issue kept a good idea from quietly growing a feature that was already planned | My idea during feature 3; the Favorites shelf covers it for now **(me)**. [Issue #7](https://github.com/nolives/recorded/issues/7) |
+| A fuller home page | Not built | Backlogged | Not every struggle needs fixing now: first impressions matter, but logging works without it | The stranger test's third struggle ("bare-bones"); cosmetic and doesn't block anyone, so not fixed before the demo **(me)**. |

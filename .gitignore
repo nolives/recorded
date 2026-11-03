@@ -42,6 +42,7 @@ next-env.d.ts
 
 # allow the example env file (no real secrets in it)
 !.env.example
+!.env.test.example
 
 # course materials (keep the assignment PDF out of the public repo)
 *.pdf
