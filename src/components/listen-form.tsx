@@ -8,6 +8,7 @@ import type {
 } from "@/app/(app)/listens/actions";
 import { AlbumCover } from "@/components/album-cover";
 import { AlbumSearch } from "@/components/album-search";
+import { StarIcon } from "@/components/star-icon";
 import { coverThumbnail, type FoundAlbum } from "@/lib/musicbrainz";
 import { REVIEW_MAX, type ListenField } from "@/lib/validation";
 
@@ -17,6 +18,9 @@ type ListenFormProps = {
   submitLabel: string;
   pendingLabel: string;
   cancelHref: string;
+  // The Edit form: the Favorite box shows whether the album is a favorite
+  // now, and unticking it removes the star. On the Log form it only adds.
+  editing?: boolean;
 };
 
 const inputClass =
@@ -60,6 +64,7 @@ export function ListenForm({
   submitLabel,
   pendingLabel,
   cancelHref,
+  editing = false,
 }: ListenFormProps) {
   const [state, formAction, pending] = useActionState(action, {});
   const values = { ...initialValues, ...state.values };
@@ -245,6 +250,27 @@ export function ListenForm({
             </select>
           </Field>
         </div>
+        {/* Like the score, the key keeps the tick through a failed save. */}
+        <label
+          key={`favorite-${values.favorite ?? ""}`}
+          className="flex cursor-pointer items-center gap-3 rounded-md border border-line bg-surface px-3 py-2.5 transition-colors hover:border-accent/60 has-[:checked]:border-accent/60 has-[:checked]:bg-accent/10"
+        >
+          <input
+            type="checkbox"
+            name="favorite"
+            value="on"
+            defaultChecked={values.favorite === "on"}
+            className="peer size-4 accent-[var(--accent)]"
+          />
+          <StarIcon filled={false} className="size-4 text-muted peer-checked:hidden" />
+          <StarIcon filled className="hidden size-4 text-accent peer-checked:block" />
+          <span className="text-sm">
+            <span className="font-medium">{editing ? "Favorite" : "Add to favorites"}</span>
+            <span className="ml-1 text-muted">
+              {editing ? "(untick to remove the album from your favorites)" : "(stars the album)"}
+            </span>
+          </span>
+        </label>
         <Field
           label="Review"
           field="review"
