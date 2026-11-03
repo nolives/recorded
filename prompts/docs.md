@@ -29,3 +29,18 @@
 - **Two set-up steps corrected before committing:**
   - `supabase db push` needs `--remote` in this CLI version, or it looks for a local database.
   - `config push` was taken out, because it would copy *my* site address into someone else's project.
+
+## 3. Checking it against the assignment
+
+> "what is the reference to the planned recharts library?"
+
+**Agent:** PLAN.md section 5: "Chart | Recharts | A simple, popular React chart library for the listens-per-month bar chart." The dashboard (#22) drew the chart from plain page elements instead. That switch was never raised with me; it appears only as a line in `prompts/dashboard.md`.
+
+> "thank you. can you double check the read me and plan vs reality and make sure it fulfills the assignment requirements?"
+
+**Agent:** Compared both against the assignment's exact wording.
+- **README** covers all four required parts: what it does, the live URL, the tools, how to run it. The agent checked that every setup command exists in this Supabase CLI version (3.0.0), and added that `db push --remote` may ask for the database password.
+- **Plan vs. Reality** structure was right (one section at the bottom, the assignment's exact columns, original plan unchanged, 7 + 1 = 8 sections). Three things were fixed:
+  1. **"What changed and why (one line)"** cells ran up to 34 words. All are now 20 or fewer.
+  2. **Some cells said *what* changed but not *why*.** Each now has a reason ("because…", "so…").
+  3. **The "Shipped / Changed / Cut" column** had "Backlogged" and "Not built" in two rows. Those are now **Cut**, with Backlogged in the Status column.

@@ -47,6 +47,7 @@ You need [Node.js](https://nodejs.org) 22 or newer and a free [Supabase](https:/
    npx supabase link --project-ref <your-project-ref>
    npx supabase db push --remote
    ```
+   It may ask for your project's database password (the one you chose when creating the project).
    In Supabase → Authentication → Sign In / Providers → Email, turn off **Confirm email** so new accounts can log in right away.
 4. **Start it:**
    ```bash
