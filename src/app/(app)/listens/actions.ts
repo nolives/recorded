@@ -8,7 +8,8 @@ import { validateListen, type ListenErrors, type ListenInput } from "@/lib/valid
 // musicbrainzId and coverUrl are set by the album search box. coverUrl is
 // only used to show the cover again after a failed save; the saved cover
 // always comes from the server's own lookup.
-export type ListenFormValues = ListenInput & { musicbrainzId: string; coverUrl: string };
+// favorite is "on" when the Favorite box is ticked.
+export type ListenFormValues = ListenInput & { musicbrainzId: string; coverUrl: string; favorite: string };
 
 export type ListenFormState = {
   message?: string;
@@ -45,6 +46,7 @@ function readForm(formData: FormData): ListenFormValues {
     score: clean(formData.get("score")),
     review: String(formData.get("review") ?? "").trim(),
     musicbrainzId: clean(formData.get("musicbrainzId")).toLowerCase(),
+    favorite: formData.get("favorite") === "on" ? "on" : "",
     coverUrl: clean(formData.get("coverUrl")),
   };
 }
@@ -144,6 +146,19 @@ async function findOrCreateAlbum(
   return created.id;
 }
 
+// Stars or unstars the album for the signed-in user (the privacy rules only
+// let people change their own stars). A star that fails to save doesn't
+// undo the listen; the Favorite button on the listen's page still works.
+async function setFavorite(supabase: Supabase, albumId: number, favorite: boolean) {
+  if (favorite) {
+    await supabase
+      .from("stars")
+      .upsert({ album_id: albumId }, { onConflict: "user_id,album_id", ignoreDuplicates: true });
+  } else {
+    await supabase.from("stars").delete().eq("album_id", albumId);
+  }
+}
+
 const SAVE_ERROR = "Something went wrong saving this listen. Please try again.";
 const LOOKUP_DOWN =
   "Couldn't check this album with MusicBrainz just now. Try again in a minute, or click Remove link to save it as typed.";
@@ -174,6 +189,9 @@ export async function createListen(
       .single();
     if (error) throw error;
     listenId = data.id;
+    // On the Log form, ticking Favorite stars the album; leaving it unticked
+    // never removes a star the album already has.
+    if (values.favorite === "on") await setFavorite(supabase, albumId, true);
   } catch {
     return { message: SAVE_ERROR, values };
   }
@@ -221,6 +239,9 @@ export async function updateListen(
     if (!data || data.length === 0) {
       return { message: "That listen doesn't exist anymore.", values };
     }
+    // On the Edit form the box shows the current state, so it can add or
+    // remove the star.
+    await setFavorite(supabase, albumId, values.favorite === "on");
   } catch {
     return { message: SAVE_ERROR, values };
   }
